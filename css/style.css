@@ -1,0 +1,722 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+
+body {
+    font-family: Arial, Helvetica, sans-serif;
+
+    background: #eef8ff;
+
+    color: #17324d;
+
+    min-height: 100vh;
+}
+
+
+/* =========================
+   HEADER
+========================= */
+
+.header {
+
+    background: white;
+
+    padding: 20px 6%;
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    border-bottom: 1px solid #dcecf7;
+}
+
+
+.brand {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 12px;
+}
+
+
+.logo {
+
+    width: 50px;
+
+    height: 50px;
+
+    border-radius: 14px;
+
+    background: #e4f5ff;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    font-size: 28px;
+}
+
+
+.brand h1 {
+
+    color: #1688d4;
+
+    font-size: 25px;
+
+    margin-bottom: 4px;
+}
+
+
+.brand p {
+
+    color: #718096;
+
+    font-size: 13px;
+}
+
+
+.date-box {
+
+    background: #eaf7ff;
+
+    color: #1688d4;
+
+    padding: 11px 16px;
+
+    border-radius: 10px;
+
+    font-weight: bold;
+}
+
+
+/* =========================
+   MAIN
+========================= */
+
+.container {
+
+    width: 90%;
+
+    max-width: 1200px;
+
+    margin: 30px auto;
+}
+
+
+/* =========================
+   GOAL
+========================= */
+
+.goal-card {
+
+    background: white;
+
+    border-radius: 20px;
+
+    padding: 25px;
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    margin-bottom: 25px;
+
+    box-shadow: 0 6px 25px rgba(0, 100, 150, 0.08);
+}
+
+
+.goal-card h2 {
+
+    font-size: 21px;
+
+    margin-bottom: 8px;
+}
+
+
+.goal-card p {
+
+    color: #718096;
+
+    line-height: 1.5;
+}
+
+
+.goal-card .small-text {
+
+    margin-top: 7px;
+
+    font-size: 13px;
+}
+
+
+.goal-badge {
+
+    min-width: 130px;
+
+    padding: 15px;
+
+    border-radius: 15px;
+
+    background: #e5f5ff;
+
+    color: #1688d4;
+
+    text-align: center;
+}
+
+
+.goal-badge span {
+
+    display: block;
+
+    font-size: 22px;
+
+    margin-bottom: 3px;
+}
+
+
+.goal-badge strong {
+
+    font-size: 28px;
+
+    display: block;
+}
+
+
+.goal-badge small {
+
+    color: #718096;
+}
+
+
+/* =========================
+   PEOPLE
+========================= */
+
+.people-grid {
+
+    display: grid;
+
+    grid-template-columns: repeat(2, 1fr);
+
+    gap: 25px;
+}
+
+
+/* =========================
+   PERSON CARD
+========================= */
+
+.person-card {
+
+    background: white;
+
+    border-radius: 20px;
+
+    padding: 25px;
+
+    box-shadow: 0 6px 25px rgba(0, 100, 150, 0.08);
+
+    transition: transform 0.2s ease;
+}
+
+
+.person-card:hover {
+
+    transform: translateY(-3px);
+}
+
+
+.person-header {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 12px;
+}
+
+
+.avatar {
+
+    width: 48px;
+
+    height: 48px;
+
+    border-radius: 50%;
+
+    background: #e5f5ff;
+
+    display: flex;
+
+    justify-content: center;
+
+    align-items: center;
+
+    font-size: 23px;
+}
+
+
+.person-name {
+
+    font-size: 18px;
+
+    margin-bottom: 3px;
+}
+
+
+.person-subtitle {
+
+    font-size: 12px;
+
+    color: #8a9aaa;
+}
+
+
+/* =========================
+   PROGRESS CIRCLE
+========================= */
+
+.progress-container {
+
+    display: flex;
+
+    justify-content: center;
+
+    margin: 25px 0;
+}
+
+
+.progress-circle {
+
+    width: 155px;
+
+    height: 155px;
+
+    border-radius: 50%;
+
+    background:
+        conic-gradient(
+            #2196f3 0deg,
+            #e5f2f9 0deg
+        );
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    position: relative;
+}
+
+
+.progress-circle::before {
+
+    content: "";
+
+    position: absolute;
+
+    width: 118px;
+
+    height: 118px;
+
+    background: white;
+
+    border-radius: 50%;
+}
+
+
+.circle-content {
+
+    position: relative;
+
+    z-index: 2;
+
+    text-align: center;
+}
+
+
+.glass-count {
+
+    font-size: 32px;
+
+    font-weight: bold;
+
+    color: #1688d4;
+}
+
+
+.glass-total {
+
+    font-size: 17px;
+
+    color: #718096;
+}
+
+
+/* =========================
+   WATER INFORMATION
+========================= */
+
+.water-info {
+
+    text-align: center;
+}
+
+
+.water-amount {
+
+    color: #1688d4;
+
+    font-size: 22px;
+
+    font-weight: bold;
+}
+
+
+.progress-text {
+
+    color: #718096;
+
+    font-size: 14px;
+
+    margin-top: 5px;
+}
+
+
+/* =========================
+   PROGRESS BAR
+========================= */
+
+.progress-bar {
+
+    width: 100%;
+
+    height: 9px;
+
+    background: #e5f2f9;
+
+    border-radius: 10px;
+
+    overflow: hidden;
+
+    margin: 20px 0;
+}
+
+
+.progress-fill {
+
+    width: 0%;
+
+    height: 100%;
+
+    background: #2196f3;
+
+    border-radius: 10px;
+
+    transition: width 0.3s ease;
+}
+
+
+/* =========================
+   BUTTONS
+========================= */
+
+.buttons {
+
+    display: flex;
+
+    gap: 10px;
+}
+
+
+button {
+
+    border: none;
+
+    cursor: pointer;
+
+    border-radius: 10px;
+
+    padding: 12px;
+
+    font-size: 14px;
+}
+
+
+.drink-btn {
+
+    flex: 1;
+
+    background: #2196f3;
+
+    color: white;
+
+    font-weight: bold;
+}
+
+
+.drink-btn:hover {
+
+    background: #1688d4;
+}
+
+
+.drink-btn:disabled {
+
+    background: #9ecde8;
+
+    cursor: not-allowed;
+}
+
+
+.undo-btn {
+
+    background: #edf2f7;
+
+    color: #536273;
+
+    min-width: 80px;
+}
+
+
+.undo-btn:hover {
+
+    background: #e2e8f0;
+}
+
+
+.undo-btn:disabled {
+
+    opacity: 0.5;
+
+    cursor: not-allowed;
+}
+
+
+/* =========================
+   STATUS MESSAGE
+========================= */
+
+.status {
+
+    text-align: center;
+
+    margin-top: 15px;
+
+    font-size: 13px;
+
+    color: #718096;
+}
+
+
+.status.completed {
+
+    color: #16a34a;
+
+    font-weight: bold;
+}
+
+
+/* =========================
+   HARDWARE
+========================= */
+
+.hardware-card {
+
+    background: white;
+
+    margin-top: 30px;
+
+    padding: 25px;
+
+    border-radius: 20px;
+
+    box-shadow: 0 6px 25px rgba(0, 100, 150, 0.08);
+}
+
+
+.section-title {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    margin-bottom: 20px;
+}
+
+
+.section-title h2 {
+
+    font-size: 20px;
+}
+
+
+.prototype-label {
+
+    font-size: 11px;
+
+    background: #edf2f7;
+
+    color: #718096;
+
+    padding: 6px 10px;
+
+    border-radius: 20px;
+}
+
+
+.hardware-grid {
+
+    display: grid;
+
+    grid-template-columns: repeat(3, 1fr);
+
+    gap: 15px;
+}
+
+
+.hardware-item {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+
+    background: #f7fbfe;
+
+    padding: 15px;
+
+    border-radius: 12px;
+}
+
+
+.hardware-item p {
+
+    color: #718096;
+
+    font-size: 12px;
+
+    margin-top: 4px;
+}
+
+
+.status-dot {
+
+    width: 10px;
+
+    height: 10px;
+
+    border-radius: 50%;
+
+    background: #22c55e;
+
+    flex-shrink: 0;
+}
+
+
+/* =========================
+   FOOTER
+========================= */
+
+footer {
+
+    text-align: center;
+
+    color: #8a9aaa;
+
+    font-size: 13px;
+
+    padding: 30px;
+}
+
+
+footer p + p {
+
+    margin-top: 5px;
+
+    font-size: 11px;
+}
+
+
+/* =========================
+   MOBILE
+========================= */
+
+@media (max-width: 750px) {
+
+    .header {
+
+        flex-direction: column;
+
+        align-items: flex-start;
+
+        gap: 15px;
+    }
+
+
+    .goal-card {
+
+        flex-direction: column;
+
+        align-items: flex-start;
+
+        gap: 20px;
+    }
+
+
+    .people-grid {
+
+        grid-template-columns: 1fr;
+    }
+
+
+    .hardware-grid {
+
+        grid-template-columns: 1fr;
+    }
+
+}
+
+
+@media (max-width: 450px) {
+
+    .container {
+
+        width: 94%;
+    }
+
+
+    .person-card {
+
+        padding: 18px;
+    }
+
+
+    .buttons {
+
+        flex-direction: column;
+    }
+
+
+    .undo-btn {
+
+        width: 100%;
+    }
+
+}

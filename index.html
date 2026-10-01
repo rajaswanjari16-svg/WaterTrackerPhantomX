@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <title>Water Tracker</title>
+
+    <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+<header class="header">
+
+    <div class="brand">
+        <div class="logo">💧</div>
+
+        <div>
+            <h1>Water Tracker</h1>
+            <p>Daily Hydration Dashboard</p>
+        </div>
+    </div>
+
+    <div class="date-box">
+        <span id="currentDate"></span>
+    </div>
+
+</header>
+
+
+<main class="container">
+
+    <!-- Goal -->
+    <section class="goal-card">
+
+        <div>
+            <h2>Daily Hydration Goal</h2>
+
+            <p>
+                Each person has an individual goal of
+                <strong>8 glasses</strong> per day.
+            </p>
+
+            <p class="small-text">
+                Glass size: <strong id="glassSizeText">250 ml</strong>
+            </p>
+        </div>
+
+        <div class="goal-badge">
+            <span>💧</span>
+            <strong>8</strong>
+            <small>Glasses / Day</small>
+        </div>
+
+    </section>
+
+
+    <!-- People -->
+    <section class="people-grid" id="peopleGrid">
+
+        <!-- Cards are created automatically by JavaScript -->
+
+    </section>
+
+
+    <!-- Hardware -->
+    <section class="hardware-card">
+
+        <div class="section-title">
+
+            <h2>Hardware Status</h2>
+
+            <span class="prototype-label">
+                Prototype
+            </span>
+
+        </div>
+
+
+        <div class="hardware-grid">
+
+            <div class="hardware-item">
+
+                <span class="status-dot"></span>
+
+                <div>
+                    <strong>ESP32</strong>
+                    <p id="esp32Status">Ready for connection</p>
+                </div>
+
+            </div>
+
+
+            <div class="hardware-item">
+
+                <span class="status-dot"></span>
+
+                <div>
+                    <strong>OLED</strong>
+                    <p>Ready</p>
+                </div>
+
+            </div>
+
+
+            <div class="hardware-item">
+
+                <span class="status-dot"></span>
+
+                <div>
+                    <strong>Buzzer</strong>
+                    <p>Ready</p>
+                </div>
+
+            </div>
+
+        </div>
+
+    </section>
+
+
+    <footer>
+
+        <p>
+            💧 Smart Water Tracker
+        </p>
+
+        <p>
+            Daily goal resets automatically each new day.
+        </p>
+
+    </footer>
+
+</main>
+
+
+<script src="js/script.js"></script>
+
+</body>
+
+</html>
