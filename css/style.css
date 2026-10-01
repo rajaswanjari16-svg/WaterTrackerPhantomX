@@ -505,10 +505,7 @@ body {
     color: var(--primary-cyan);
 }
 
-.metric-val.glass-equiv {
-    font-weight: 700;
-    color: #ffffff;
-}
+
 
 /* Progress Bar */
 .bar-container {
@@ -560,6 +557,10 @@ body {
     gap: 12px;
 }
 
+.card-actions-3 {
+    grid-template-columns: 1fr 1fr 1fr;
+}
+
 .btn-action {
     display: flex;
     align-items: center;
@@ -589,6 +590,16 @@ body {
 .btn-add:hover {
     background: linear-gradient(135deg, #0369a1, #0284c7);
     box-shadow: 0 6px 18px rgba(14, 165, 233, 0.45);
+}
+
+.btn-add-200 {
+    background: linear-gradient(135deg, #0e7490, #06b6d4);
+    box-shadow: 0 4px 14px rgba(6, 182, 212, 0.3);
+}
+
+.btn-add-200:hover {
+    background: linear-gradient(135deg, #155e75, #0e7490);
+    box-shadow: 0 6px 18px rgba(6, 182, 212, 0.45);
 }
 
 .btn-undo {

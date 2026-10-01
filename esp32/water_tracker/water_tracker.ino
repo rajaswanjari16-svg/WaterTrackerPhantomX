@@ -9,41 +9,41 @@
 //   WiFi, HTTPClient, Preferences, Wire, time.h
 // =====================================================
 
-#include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
-#include <WiFi.h>
 #include <HTTPClient.h>
 #include <Preferences.h>
+#include <WiFi.h>
+#include <Wire.h>
 #include <time.h>
 
 // =====================================================
 // NETWORK & SERVER SETTINGS
 // =====================================================
 
-const char* WIFI_SSID     = "YOUR_WIFI_NAME";
-const char* WIFI_PASSWORD = "YOUR_WIFI_PASSWORD";
+const char *WIFI_SSID = "S23";
+const char *WIFI_PASSWORD = "admin000";
 
 // Laptop IP and Server Port (3000)
-const char* SERVER_HOST    = "192.168.101.97";
-const char* STATE_URL       = "http://192.168.101.97:3000/api/state";
-const char* COMMAND_URL     = "http://192.168.101.97:3000/api/command";
-const char* COMMAND_ACK_URL = "http://192.168.101.97:3000/api/command/ack";
+const char *SERVER_HOST = "10.107.183.37";
+const char *STATE_URL = "http://10.107.183.37:3000/api/state";
+const char *COMMAND_URL = "http://10.107.183.37:3000/api/command";
+const char *COMMAND_ACK_URL = "http://10.107.183.37:3000/api/command/ack";
 
 // =====================================================
 // INDIA TIME (Asia/Kolkata, UTC +5:30)
 // =====================================================
 
-const long GMT_OFFSET_SEC      = 19800; // 5 hours 30 minutes in seconds
-const int  DAYLIGHT_OFFSET_SEC = 0;
+const long GMT_OFFSET_SEC = 19800; // 5 hours 30 minutes in seconds
+const int DAYLIGHT_OFFSET_SEC = 0;
 
 // =====================================================
 // OLED DISPLAY (128x64 I2C, Address 0x3C)
 // =====================================================
 
-#define SCREEN_WIDTH  128
+#define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
-#define OLED_ADDR     0x3C
+#define OLED_ADDR 0x3C
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 
@@ -51,28 +51,27 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
 // HARDWARE PINS
 // =====================================================
 
-#define TOUCH1 32  // Button A (Controls P1 in Pair 1, P3 in Pair 2)
-#define TOUCH2 33  // Button B (Controls P2 in Pair 1, P4 in Pair 2)
-#define BUZZER 13  // Piezo Buzzer
+#define TOUCH1 32 // Button A (Controls P1 in Pair 1, P3 in Pair 2)
+#define TOUCH2 33 // Button B (Controls P2 in Pair 1, P4 in Pair 2)
+#define BUZZER 13 // Piezo Buzzer
 
 // =====================================================
 // HYDRATION SETTINGS
 // =====================================================
 
-#define DAILY_GLASS_GOAL 8
-#define GLASS_SIZE_ML    250
-#define GOAL_ML          2000
+#define GOAL_ML 3000
 
 // =====================================================
 // TIMING THRESHOLDS (FINAL SPECIFICATION)
 // =====================================================
 
-#define DEBOUNCE_TIME    50    // Minimum ms to reject electrical noise
-#define T1_THRESHOLD_MS  2000  // 0 to < 2000 ms  -> +250 mL
-#define T2_THRESHOLD_MS  4000  // 2000 to < 4000 ms -> +200 mL
-                               // >= 4000 ms        -> UNDO
-#define BOTH_HOLD_TIME   3000  // Both buttons >= 3000 ms -> Switch Pair
-#define TIMER_UPDATE     50    // OLED refresh during button hold (ms)
+#define DEBOUNCE_TIME 50     // Minimum ms to reject electrical noise
+#define T1_THRESHOLD_MS 2000 // 0 to < 2000 ms  -> +250 mL
+#define T2_THRESHOLD_MS                                                        \
+  4000                      // 2000 to < 4000 ms -> +200 mL
+                            // >= 4000 ms        -> UNDO
+#define BOTH_HOLD_TIME 3000 // Both buttons >= 3000 ms -> Switch Pair
+#define TIMER_UPDATE 50     // OLED refresh during button hold (ms)
 
 // Intervals
 #define SERVER_UPDATE_INTERVAL 2000 // Send state every 2 sec
@@ -86,12 +85,12 @@ unsigned long lastCommandCheck = 0;
 // =====================================================
 
 // Water amounts in mL
-int water[4] = { 0, 0, 0, 0 };
+int water[4] = {0, 0, 0, 0};
 
 // History stack for undo (records exact addition amounts: 250 or 200)
 #define MAX_HISTORY 50
 int history[4][MAX_HISTORY];
-int historyCount[4] = { 0, 0, 0, 0 };
+int historyCount[4] = {0, 0, 0, 0};
 
 // Currently selected pair: false = Pair 1 (P1/P2), true = Pair 2 (P3/P4)
 bool secondPair = false;
@@ -104,7 +103,7 @@ unsigned long touch1Start = 0;
 unsigned long touch2Start = 0;
 
 // Both buttons tracking
-bool bothActive  = false;
+bool bothActive = false;
 bool pairChanged = false;
 unsigned long bothStart = 0;
 
@@ -129,9 +128,7 @@ void beep(int duration) {
 }
 
 // Buzzer feedback tailored for each action
-void soundAdd250() {
-  beep(100);
-}
+void soundAdd250() { beep(100); }
 
 void soundAdd200() {
   beep(70);
@@ -161,9 +158,7 @@ void soundGoalComplete() {
   beep(300);
 }
 
-void soundWarning() {
-  beep(300);
-}
+void soundWarning() { beep(300); }
 
 // =====================================================
 // INDIA TIME & DATE CHECK
@@ -211,7 +206,8 @@ void resetData() {
   savedDate = getToday();
   saveData();
 
-  Serial.println("[RESET] Daily water data and history reset for Asia/Kolkata midnight.");
+  Serial.println(
+      "[RESET] Daily water data and history reset for Asia/Kolkata midnight.");
 }
 
 void loadData() {
@@ -288,7 +284,7 @@ void showScreen() {
   display.clearDisplay();
   display.setTextColor(SSD1306_WHITE);
 
-  int pLeft  = secondPair ? 2 : 0;
+  int pLeft = secondPair ? 2 : 0;
   int pRight = secondPair ? 3 : 1;
 
   // Header banner: Active Pair
@@ -311,16 +307,18 @@ void showScreen() {
   display.print(water[pLeft]);
   display.print("mL");
 
-  // Glass equivalent (e.g. 1.8/8)
-  float glLeft = water[pLeft] / 250.0;
+  // Percentage progress
+  int pctLeft = (water[pLeft] * 100) / GOAL_ML;
+  if (pctLeft > 100) pctLeft = 100;
   display.setCursor(80, 16);
-  display.print(glLeft, 1);
-  display.print("/8g");
+  display.print(pctLeft);
+  display.print("%");
 
   // Progress Bar Left
   display.drawRect(24, 26, 102, 6, SSD1306_WHITE);
   int fillLeft = (water[pLeft] * 98) / GOAL_ML;
-  if (fillLeft > 98) fillLeft = 98;
+  if (fillLeft > 98)
+    fillLeft = 98;
   if (fillLeft > 0) {
     display.fillRect(26, 28, fillLeft, 2, SSD1306_WHITE);
   }
@@ -335,16 +333,18 @@ void showScreen() {
   display.print(water[pRight]);
   display.print("mL");
 
-  // Glass equivalent (e.g. 1.8/8)
-  float glRight = water[pRight] / 250.0;
+  // Percentage progress
+  int pctRight = (water[pRight] * 100) / GOAL_ML;
+  if (pctRight > 100) pctRight = 100;
   display.setCursor(80, 38);
-  display.print(glRight, 1);
-  display.print("/8g");
+  display.print(pctRight);
+  display.print("%");
 
   // Progress Bar Right
   display.drawRect(24, 48, 102, 6, SSD1306_WHITE);
   int fillRight = (water[pRight] * 98) / GOAL_ML;
-  if (fillRight > 98) fillRight = 98;
+  if (fillRight > 98)
+    fillRight = 98;
   if (fillRight > 0) {
     display.fillRect(26, 50, fillRight, 2, SSD1306_WHITE);
   }
@@ -476,10 +476,10 @@ void congratulations(int personNum) {
   display.setCursor(16, 28);
   display.print("PERSON ");
   display.print(personNum);
-  display.println(" REACHED 2L");
+  display.println(" REACHED 3L");
 
   display.setCursor(20, 46);
-  display.println("8 GLASSES DONE!");
+  display.println("3000 mL DONE!");
 
   display.display();
 
@@ -644,7 +644,7 @@ void sendDataToServer() {
   json += "\"person2\":" + String(water[1]) + ",";
   json += "\"person3\":" + String(water[2]) + ",";
   json += "\"person4\":" + String(water[3]) + ",";
-  json += "\"pair\":"    + String(secondPair ? 2 : 1);
+  json += "\"pair\":" + String(secondPair ? 2 : 1);
   json += "}";
 
   int httpCode = http.POST(json);
@@ -661,21 +661,26 @@ void sendDataToServer() {
 long getJsonNumber(String json, String key) {
   String search = "\"" + key + "\":";
   int start = json.indexOf(search);
-  if (start < 0) return -1;
+  if (start < 0)
+    return -1;
   start += search.length();
   int end = json.indexOf(",", start);
-  if (end < 0) end = json.indexOf("}", start);
-  if (end < 0) return -1;
+  if (end < 0)
+    end = json.indexOf("}", start);
+  if (end < 0)
+    return -1;
   return json.substring(start, end).toInt();
 }
 
 String getJsonString(String json, String key) {
   String search = "\"" + key + "\":\"";
   int start = json.indexOf(search);
-  if (start < 0) return "";
+  if (start < 0)
+    return "";
   start += search.length();
   int end = json.indexOf("\"", start);
-  if (end < 0) return "";
+  if (end < 0)
+    return "";
   return json.substring(start, end);
 }
 
@@ -692,11 +697,12 @@ void checkServerCommands() {
   if (code == 200) {
     String response = http.getString();
     long commandId = getJsonNumber(response, "id");
-    String action  = getJsonString(response, "action");
+    String action = getJsonString(response, "action");
     long personNum = getJsonNumber(response, "person");
 
     if (commandId > 0 && personNum >= 1 && personNum <= 4) {
-      Serial.println("[COMMAND] Executing web command #" + String(commandId) + " (" + action + ") for P" + String(personNum));
+      Serial.println("[COMMAND] Executing web command #" + String(commandId) +
+                     " (" + action + ") for P" + String(personNum));
 
       int personIdx = personNum - 1;
       if (action == "add") {
@@ -735,7 +741,8 @@ void setup() {
   Wire.begin(21, 22);
   if (!display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDR)) {
     Serial.println("SSD1306 allocation failed. Check OLED wiring!");
-    while (true) delay(100);
+    while (true)
+      delay(100);
   }
 
   display.clearDisplay();
@@ -754,7 +761,8 @@ void setup() {
   connectWiFi();
 
   // Configure India Time (Asia/Kolkata)
-  configTime(GMT_OFFSET_SEC, DAYLIGHT_OFFSET_SEC, "pool.ntp.org", "time.nist.gov");
+  configTime(GMT_OFFSET_SEC, DAYLIGHT_OFFSET_SEC, "pool.ntp.org",
+             "time.nist.gov");
   delay(1200);
 
   // Load Saved Data
@@ -820,14 +828,14 @@ void loop() {
   // ---------------------------------------------------
   if (touch1 && touch2) {
     if (!bothActive) {
-      bothActive   = true;
-      pairChanged  = false;
-      bothStart    = now;
+      bothActive = true;
+      pairChanged = false;
+      bothStart = now;
       lastTimerUpdate = 0;
 
       // Invalidate individual button timers so they never trigger on release
-      touch1Start  = 0;
-      touch2Start  = 0;
+      touch1Start = 0;
+      touch2Start = 0;
     }
 
     // Refresh live OLED switch countdown
@@ -852,12 +860,12 @@ void loop() {
   if (bothActive) {
     if (!touch1 && !touch2) {
       // Both released: reset state safely
-      bothActive     = false;
-      pairChanged    = false;
+      bothActive = false;
+      pairChanged = false;
       previousTouch1 = false;
       previousTouch2 = false;
-      touch1Start    = 0;
-      touch2Start    = 0;
+      touch1Start = 0;
+      touch2Start = 0;
       showScreen();
       delay(20);
       return;

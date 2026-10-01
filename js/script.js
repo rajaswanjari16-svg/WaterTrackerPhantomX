@@ -4,9 +4,7 @@
 // Starts strictly from 0 mL for all 4 people
 // =====================================================
 
-const DAILY_GOAL_ML = 2000;
-const GLASS_SIZE_ML = 250;
-const TOTAL_GLASSES = 8;
+const DAILY_GOAL_ML = 3000;
 
 // Local mirror of 4 people's hydration data - STARTS AT ZERO
 let peopleData = [
@@ -45,7 +43,7 @@ function updateDateDisplay(dateStr) {
 // SEND ACTION COMMAND TO SERVER
 // =====================================================
 
-async function sendCommand(action, personNumber) {
+async function sendCommand(action, personNumber, amount) {
     const syncIndicator = document.getElementById("syncStatusIndicator");
     const syncText = document.getElementById("syncText");
 
@@ -60,7 +58,7 @@ async function sendCommand(action, personNumber) {
             body: JSON.stringify({
                 action: action,
                 person: personNumber,
-                amount: action === "add" ? 250 : undefined
+                amount: action === "add" ? (amount || 250) : undefined
             })
         });
 
@@ -84,12 +82,12 @@ async function sendCommand(action, personNumber) {
 }
 
 // Global functions attached to buttons in index.html
-function drinkWater(personNumber) {
-    sendCommand("add", personNumber);
+function drinkWater(personNumber, amount) {
+    sendCommand("add", personNumber, amount || 250);
 }
 
 function undoWater(personNumber) {
-    sendCommand("undo", personNumber);
+    sendCommand("undo", personNumber, 0);
 }
 
 // Reset all 4 people back to 0 mL
@@ -119,20 +117,18 @@ function updatePersonUI(person) {
     const rawPercent = (water / DAILY_GOAL_ML) * 100;
     const safePercent = Math.min(100, Math.round(rawPercent));
 
-    // 2. Glass-equivalent progress (e.g., 450 mL = 1.8 glasses; 500 mL = 2 glasses)
-    const glassEquiv = water / GLASS_SIZE_ML;
-    const glassDisplay = Number.isInteger(glassEquiv) 
-        ? `${glassEquiv} / ${TOTAL_GLASSES} glasses` 
-        : `${glassEquiv.toFixed(1)} / ${TOTAL_GLASSES} glasses`;
+    // 2. Remaining mL to goal
+    const remaining = Math.max(0, DAILY_GOAL_ML - water);
+    const remainingDisplay = remaining > 0 ? `${remaining} mL left` : "Goal reached!";
 
-    // 3. Litre value (e.g., 0.45 L or 2.00 L)
+    // 3. Litre value (e.g., 0.45 L or 3.00 L)
     const literDisplay = `${(water / 1000).toFixed(2)} L`;
 
     // DOM Elements
     const cardEl       = document.getElementById(`card${id}`);
     const waterEl      = document.getElementById(`water${id}`);
     const litersEl     = document.getElementById(`liters${id}`);
-    const glassesEl    = document.getElementById(`glasses${id}`);
+    const remainingEl  = document.getElementById(`remaining${id}`);
     const percentEl    = document.getElementById(`percent${id}`);
     const circleEl     = document.getElementById(`circle${id}`);
     const barEl        = document.getElementById(`bar${id}`);
@@ -141,10 +137,10 @@ function updatePersonUI(person) {
     const undoBtn      = document.getElementById(`undoBtn${id}`);
 
     // Update Text Content
-    if (waterEl)   waterEl.textContent   = `${water} mL`;
-    if (litersEl)  litersEl.textContent  = literDisplay;
-    if (glassesEl) glassesEl.textContent = glassDisplay;
-    if (percentEl) percentEl.textContent = `${safePercent}%`;
+    if (waterEl)     waterEl.textContent     = `${water} mL`;
+    if (litersEl)    litersEl.textContent    = literDisplay;
+    if (remainingEl) remainingEl.textContent = remainingDisplay;
+    if (percentEl)   percentEl.textContent   = `${safePercent}%`;
 
     // Update Progress Bar
     if (barEl) {
@@ -164,9 +160,8 @@ function updatePersonUI(person) {
         if (isCompleted) {
             statusEl.textContent = "Daily Goal Completed! 🎉";
         } else {
-            const remaining = DAILY_GOAL_ML - water;
-            const remainingGlasses = (remaining / GLASS_SIZE_ML).toFixed(1);
-            statusEl.textContent = `${remaining} mL remaining (${remainingGlasses} glasses)`;
+            const rem = DAILY_GOAL_ML - water;
+            statusEl.textContent = `${rem} mL remaining`;
         }
     }
 

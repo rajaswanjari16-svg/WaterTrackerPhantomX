@@ -40,8 +40,7 @@ app.use(express.static(path.join(__dirname, '..')));
 // STATE & CONFIGURATION - STARTS STRICTLY FROM ZERO
 // =====================================================
 
-const GOAL_ML = 2000;
-const GLASS_SIZE_ML = 250;
+const GOAL_ML = 3000;
 
 // Initialized strictly to 0 mL for all 4 people
 let waterState = {
@@ -147,8 +146,7 @@ app.get('/api/state', (req, res) => {
             lastHeartbeat: lastEspHeartbeat
         },
         date: currentDate,
-        goalML: GOAL_ML,
-        glassSizeML: GLASS_SIZE_ML
+        goalML: GOAL_ML
     });
 });
 
@@ -279,7 +277,7 @@ app.listen(PORT, '0.0.0.0', () => {
     console.log("====================================================");
     console.log(`💧 Water Tracker Server running on port ${PORT}`);
     console.log(`📡 Local Website URL:   http://localhost:${PORT}`);
-    console.log(`🌐 Network Website URL: http://192.168.101.97:${PORT}`);
+    console.log(`🌐 Network Website URL: http://10.107.183.37:${PORT}`);
     console.log(`🕒 Timezone: Asia/Kolkata (Current: ${currentDate})`);
     console.log("====================================================");
 });
