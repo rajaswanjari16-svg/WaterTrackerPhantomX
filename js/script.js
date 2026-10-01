@@ -1,749 +1,328 @@
-/* =====================================================
-   WATER TRACKER
-   ===================================================== */
+// =====================================================
+// AQUATRACK 4P - CLIENT SCRIPT
+// Synchronized with Node.js Express Server & ESP32
+// Starts strictly from 0 mL for all 4 people
+// =====================================================
 
+const DAILY_GOAL_ML = 2000;
+const GLASS_SIZE_ML = 250;
+const TOTAL_GLASSES = 8;
 
-/* =====================================================
-   CONFIGURATION
-
-   Change these values if the requirements change.
-   ===================================================== */
-
-const CONFIG = {
-
-    // Daily target for EACH person
-    DAILY_GLASS_GOAL: 8,
-
-    // Current assumed glass size
-    GLASS_SIZE_ML: 250,
-
-    // Number of people in the household
-    NUMBER_OF_PEOPLE: 4,
-
-    // Storage keys
-    DATA_KEY: "waterTrackerData",
-
-    DATE_KEY: "waterTrackerDate"
-
-};
-
-
-/* =====================================================
-   PEOPLE
-
-   Each person has an independent counter.
-   ===================================================== */
-
-let people = [
-
-    {
-        id: 1,
-        name: "Person 1",
-        glasses: 0
-    },
-
-    {
-        id: 2,
-        name: "Person 2",
-        glasses: 0
-    },
-
-    {
-        id: 3,
-        name: "Person 3",
-        glasses: 0
-    },
-
-    {
-        id: 4,
-        name: "Person 4",
-        glasses: 0
-    }
-
+// Local mirror of 4 people's hydration data - STARTS AT ZERO
+let peopleData = [
+    { id: 1, name: "Person 1", water: 0 },
+    { id: 2, name: "Person 2", water: 0 },
+    { id: 3, name: "Person 3", water: 0 },
+    { id: 4, name: "Person 4", water: 0 }
 ];
 
+let currentPair = 1; // 1 = P1/P2, 2 = P3/P4
 
-/* =====================================================
-   GET TODAY'S DATE
-   ===================================================== */
+// =====================================================
+// DATE DISPLAY (ASIA/KOLKATA TIMEZONE)
+// =====================================================
 
-function getToday() {
+function updateDateDisplay(dateStr) {
+    const dateElement = document.getElementById("currentDate");
+    if (!dateElement) return;
 
-    return new Date().toDateString();
-
-}
-
-
-/* =====================================================
-   FORMAT DATE
-   ===================================================== */
-
-function displayDate() {
-
-    const date = new Date();
-
-    const formattedDate =
-        date.toLocaleDateString(
-            "en-IN",
-            {
-                weekday: "long",
-                day: "numeric",
-                month: "short",
-                year: "numeric"
-            }
-        );
-
-    document.getElementById("currentDate")
-        .textContent = formattedDate;
-
-}
-
-
-/* =====================================================
-   SAVE DATA
-   ===================================================== */
-
-function saveData() {
-
-    localStorage.setItem(
-        CONFIG.DATA_KEY,
-        JSON.stringify(people)
-    );
-
-    localStorage.setItem(
-        CONFIG.DATE_KEY,
-        getToday()
-    );
-
-}
-
-
-/* =====================================================
-   RESET PEOPLE
-   ===================================================== */
-
-function resetPeople() {
-
-    people = people.map(person => {
-
-        return {
-
-            ...person,
-
-            glasses: 0
-
-        };
-
-    });
-
-    saveData();
-
-}
-
-
-/* =====================================================
-   LOAD DATA
-   ===================================================== */
-
-function loadData() {
-
-    const savedData =
-        localStorage.getItem(CONFIG.DATA_KEY);
-
-    const savedDate =
-        localStorage.getItem(CONFIG.DATE_KEY);
-
-
-    /*
-       If there is no saved date,
-       this is the first time the app is opened.
-    */
-
-    if (!savedDate) {
-
-        saveData();
-
-        return;
-
+    try {
+        const now = new Date();
+        const formatted = now.toLocaleDateString("en-IN", {
+            timeZone: "Asia/Kolkata",
+            weekday: "short",
+            day: "numeric",
+            month: "short",
+            year: "numeric"
+        });
+        dateElement.textContent = formatted;
+    } catch (e) {
+        dateElement.textContent = dateStr || new Date().toDateString();
     }
+}
 
+// =====================================================
+// SEND ACTION COMMAND TO SERVER
+// =====================================================
 
-    /*
-       If the saved date is different from today,
-       automatically start a new day.
-    */
+async function sendCommand(action, personNumber) {
+    const syncIndicator = document.getElementById("syncStatusIndicator");
+    const syncText = document.getElementById("syncText");
 
-    if (savedDate !== getToday()) {
+    try {
+        if (syncText) syncText.textContent = "Sending...";
 
-        resetPeople();
+        const response = await fetch("/api/command", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                action: action,
+                person: personNumber,
+                amount: action === "add" ? 250 : undefined
+            })
+        });
 
-        return;
+        const data = await response.json();
 
-    }
-
-
-    /*
-       Load today's saved counters.
-    */
-
-    if (savedData) {
-
-        try {
-
-            const parsedData =
-                JSON.parse(savedData);
-
-
-            /*
-               Make sure the saved data
-               contains the expected people.
-            */
-
-            if (
-                Array.isArray(parsedData) &&
-                parsedData.length === CONFIG.NUMBER_OF_PEOPLE
-            ) {
-
-                people = parsedData;
-
-            }
-
+        if (!response.ok) {
+            console.warn("[COMMAND ERROR]", data.message);
+            return;
         }
 
-        catch (error) {
+        console.log(`[COMMAND SENT] ${action} for Person ${personNumber}`);
 
-            console.error(
-                "Could not load saved data.",
-                error
-            );
+        // Fetch state quickly after command so UI updates immediately
+        setTimeout(fetchServerState, 150);
 
+    } catch (error) {
+        console.error("Failed to send command to server:", error);
+        if (syncIndicator) syncIndicator.classList.add("sync-error");
+        if (syncText) syncText.textContent = "Offline";
+    }
+}
+
+// Global functions attached to buttons in index.html
+function drinkWater(personNumber) {
+    sendCommand("add", personNumber);
+}
+
+function undoWater(personNumber) {
+    sendCommand("undo", personNumber);
+}
+
+// Reset all 4 people back to 0 mL
+async function resetAllData() {
+    try {
+        const response = await fetch("/api/reset", { method: "POST" });
+        if (response.ok) {
+            peopleData.forEach(p => p.water = 0);
+            peopleData.forEach(p => updatePersonUI(p));
+            console.log("[RESET] Reset all data to 0 mL");
+            setTimeout(fetchServerState, 100);
         }
-
+    } catch (e) {
+        console.error("Failed to reset:", e);
     }
-
 }
 
-
-/* =====================================================
-   CALCULATE WATER
-   ===================================================== */
-
-function calculateWater(glasses) {
-
-    return glasses * CONFIG.GLASS_SIZE_ML;
-
-}
-
-
-/* =====================================================
-   FORMAT WATER
-   ===================================================== */
-
-function formatWater(amountML) {
-
-    if (amountML >= 1000) {
-
-        const litres =
-            amountML / 1000;
-
-        return litres + " L";
-
-    }
-
-    return amountML + " ml";
-
-}
-
-
-/* =====================================================
-   CALCULATE PROGRESS
-   ===================================================== */
-
-function calculateProgress(glasses) {
-
-    return (
-        glasses /
-        CONFIG.DAILY_GLASS_GOAL
-    ) * 100;
-
-}
-
-
-/* =====================================================
-   CREATE PERSON CARD
-   ===================================================== */
-
-function createPersonCard(person) {
-
-    const card =
-        document.createElement("article");
-
-
-    card.className =
-        "person-card";
-
-
-    card.innerHTML = `
-
-        <div class="person-header">
-
-            <div class="avatar">
-                👤
-            </div>
-
-            <div>
-
-                <h3 class="person-name">
-                    ${person.name}
-                </h3>
-
-                <p class="person-subtitle">
-                    Daily Tracker
-                </p>
-
-            </div>
-
-        </div>
-
-
-        <div class="progress-container">
-
-            <div
-                class="progress-circle"
-                id="circle-${person.id}"
-            >
-
-                <div class="circle-content">
-
-                    <span
-                        class="glass-count"
-                        id="glasses-${person.id}"
-                    >
-                        0
-                    </span>
-
-                    <span class="glass-total">
-                        / ${CONFIG.DAILY_GLASS_GOAL}
-                    </span>
-
-                </div>
-
-            </div>
-
-        </div>
-
-
-        <div class="water-info">
-
-            <div
-                class="water-amount"
-                id="water-${person.id}"
-            >
-                0 ml
-            </div>
-
-            <p
-                class="progress-text"
-                id="percent-${person.id}"
-            >
-                0% completed
-            </p>
-
-        </div>
-
-
-        <div class="progress-bar">
-
-            <div
-                class="progress-fill"
-                id="bar-${person.id}"
-            >
-            </div>
-
-        </div>
-
-
-        <div class="buttons">
-
-            <button
-                class="drink-btn"
-                id="drink-${person.id}"
-                onclick="drinkWater(${person.id})"
-            >
-                + 1 Glass
-            </button>
-
-
-            <button
-                class="undo-btn"
-                id="undo-${person.id}"
-                onclick="undoWater(${person.id})"
-            >
-                ↩ Undo
-            </button>
-
-        </div>
-
-
-        <p
-            class="status"
-            id="status-${person.id}"
-        >
-            Keep drinking water 💧
-        </p>
-
-    `;
-
-
-    return card;
-
-}
-
-
-/* =====================================================
-   RENDER PEOPLE
-   ===================================================== */
-
-function renderPeople() {
-
-    const grid =
-        document.getElementById("peopleGrid");
-
-
-    grid.innerHTML = "";
-
-
-    people.forEach(person => {
-
-        const card =
-            createPersonCard(person);
-
-
-        grid.appendChild(card);
-
-    });
-
-
-    updateAllUI();
-
-}
-
-
-/* =====================================================
-   UPDATE ONE PERSON
-   ===================================================== */
+// =====================================================
+// UPDATE INDIVIDUAL PERSON CARD UI
+// =====================================================
 
 function updatePersonUI(person) {
+    const id = person.id;
+    const water = Math.max(0, person.water || 0);
 
-    const glasses =
-        person.glasses;
+    // 1. Percentage (exact, capped at 100%)
+    const rawPercent = (water / DAILY_GOAL_ML) * 100;
+    const safePercent = Math.min(100, Math.round(rawPercent));
 
+    // 2. Glass-equivalent progress (e.g., 450 mL = 1.8 glasses; 500 mL = 2 glasses)
+    const glassEquiv = water / GLASS_SIZE_ML;
+    const glassDisplay = Number.isInteger(glassEquiv) 
+        ? `${glassEquiv} / ${TOTAL_GLASSES} glasses` 
+        : `${glassEquiv.toFixed(1)} / ${TOTAL_GLASSES} glasses`;
 
-    const water =
-        calculateWater(glasses);
+    // 3. Litre value (e.g., 0.45 L or 2.00 L)
+    const literDisplay = `${(water / 1000).toFixed(2)} L`;
 
+    // DOM Elements
+    const cardEl       = document.getElementById(`card${id}`);
+    const waterEl      = document.getElementById(`water${id}`);
+    const litersEl     = document.getElementById(`liters${id}`);
+    const glassesEl    = document.getElementById(`glasses${id}`);
+    const percentEl    = document.getElementById(`percent${id}`);
+    const circleEl     = document.getElementById(`circle${id}`);
+    const barEl        = document.getElementById(`bar${id}`);
+    const statusEl     = document.getElementById(`status${id}`);
+    const badgeEl      = document.getElementById(`badge${id}`);
+    const undoBtn      = document.getElementById(`undoBtn${id}`);
 
-    const percentage =
-        calculateProgress(glasses);
+    // Update Text Content
+    if (waterEl)   waterEl.textContent   = `${water} mL`;
+    if (litersEl)  litersEl.textContent  = literDisplay;
+    if (glassesEl) glassesEl.textContent = glassDisplay;
+    if (percentEl) percentEl.textContent = `${safePercent}%`;
 
-
-    /*
-       Prevent percentage from exceeding 100.
-    */
-
-    const safePercentage =
-        Math.min(percentage, 100);
-
-
-    /*
-       Update counter.
-    */
-
-    document.getElementById(
-        `glasses-${person.id}`
-    ).textContent = glasses;
-
-
-    /*
-       Update water amount.
-    */
-
-    document.getElementById(
-        `water-${person.id}`
-    ).textContent =
-        formatWater(water);
-
-
-    /*
-       Update percentage.
-    */
-
-    document.getElementById(
-        `percent-${person.id}`
-    ).textContent =
-        safePercentage + "% completed";
-
-
-    /*
-       Update progress bar.
-    */
-
-    document.getElementById(
-        `bar-${person.id}`
-    ).style.width =
-        safePercentage + "%";
-
-
-    /*
-       Update circular progress.
-    */
-
-    const degrees =
-        (safePercentage / 100) * 360;
-
-
-    document.getElementById(
-        `circle-${person.id}`
-    ).style.background =
-        `conic-gradient(
-            #2196f3 ${degrees}deg,
-            #e5f2f9 ${degrees}deg
-        )`;
-
-
-    /*
-       Get buttons and status.
-    */
-
-    const drinkButton =
-        document.getElementById(
-            `drink-${person.id}`
-        );
-
-
-    const undoButton =
-        document.getElementById(
-            `undo-${person.id}`
-        );
-
-
-    const status =
-        document.getElementById(
-            `status-${person.id}`
-        );
-
-
-    /*
-       Daily goal completed.
-    */
-
-    if (
-        glasses >=
-        CONFIG.DAILY_GLASS_GOAL
-    ) {
-
-        status.textContent =
-            "🎉 Daily goal completed,Congratulations!-!!";
-
-
-        status.classList.add(
-            "completed"
-        );
-
-
-        /*
-           Prevent more than 8 glasses.
-        */
-
-        drinkButton.disabled = true;
-
+    // Update Progress Bar
+    if (barEl) {
+        barEl.style.width = `${Math.min(100, rawPercent)}%`;
     }
 
-    else {
-
-        status.textContent =
-            "Keep drinking water 💧";
-
-
-        status.classList.remove(
-            "completed"
-        );
-
-
-        drinkButton.disabled = false;
-
+    // Update Circular Conic Progress
+    if (circleEl) {
+        const degrees = (safePercent / 100) * 360;
+        circleEl.style.background = `conic-gradient(#38bdf8 ${degrees}deg, rgba(255, 255, 255, 0.08) ${degrees}deg)`;
     }
 
+    // Status Message & Goal Completion
+    const isCompleted = (water >= DAILY_GOAL_ML);
 
-    /*
-       Disable Undo when counter is zero.
-    */
-
-    undoButton.disabled =
-        glasses <= 0;
-
-}
-
-
-/* =====================================================
-   UPDATE EVERY PERSON
-   ===================================================== */
-
-function updateAllUI() {
-
-    people.forEach(person => {
-
-        updatePersonUI(person);
-
-    });
-
-}
-
-
-/* =====================================================
-   DRINK WATER
-   ===================================================== */
-
-function drinkWater(personId) {
-
-    const person =
-        people.find(
-            person =>
-                person.id === personId
-        );
-
-
-    if (!person) {
-
-        return;
-
+    if (statusEl) {
+        if (isCompleted) {
+            statusEl.textContent = "Daily Goal Completed! 🎉";
+        } else {
+            const remaining = DAILY_GOAL_ML - water;
+            const remainingGlasses = (remaining / GLASS_SIZE_ML).toFixed(1);
+            statusEl.textContent = `${remaining} mL remaining (${remainingGlasses} glasses)`;
+        }
     }
 
-
-    /*
-       Do not allow more than the goal.
-    */
-
-    if (
-        person.glasses >=
-        CONFIG.DAILY_GLASS_GOAL
-    ) {
-
-        return;
-
+    if (badgeEl) {
+        badgeEl.style.display = isCompleted ? "block" : "none";
     }
 
-
-    /*
-       Add one glass.
-    */
-
-    person.glasses++;
-
-
-    /*
-       Save immediately.
-    */
-
-    saveData();
-
-
-    /*
-       Update only this person's card.
-    */
-
-    updatePersonUI(person);
-
-}
-
-
-/* =====================================================
-   UNDO WATER
-   ===================================================== */
-
-function undoWater(personId) {
-
-    const person =
-        people.find(
-            person =>
-                person.id === personId
-        );
-
-
-    if (!person) {
-
-        return;
-
+    if (cardEl) {
+        if (isCompleted) {
+            cardEl.classList.add("goal-completed");
+        } else {
+            cardEl.classList.remove("goal-completed");
+        }
     }
 
+    // Disable Undo button when water is 0 mL
+    if (undoBtn) {
+        undoBtn.disabled = (water <= 0);
+    }
+}
 
-    /*
-       Cannot go below zero.
-    */
+// =====================================================
+// UPDATE ACTIVE HARDWARE PAIR DISPLAY
+// =====================================================
 
-    if (person.glasses <= 0) {
+function updatePairUI(pair) {
+    currentPair = pair || 1;
 
-        return;
+    const activePairDisplay = document.getElementById("activePairDisplay");
+    const activePairHint    = document.getElementById("activePairHint");
 
+    if (activePairDisplay) {
+        if (currentPair === 2) {
+            activePairDisplay.innerHTML = 'Pair 2 <span class="unit">(P3 & P4)</span>';
+        } else {
+            activePairDisplay.innerHTML = 'Pair 1 <span class="unit">(P1 & P2)</span>';
+        }
     }
 
+    if (activePairHint) {
+        if (currentPair === 2) {
+            activePairHint.textContent = "Hold both ESP32 buttons 3s to switch to Pair 1 (P1/P2)";
+        } else {
+            activePairHint.textContent = "Hold both ESP32 buttons 3s to switch to Pair 2 (P3/P4)";
+        }
+    }
 
-    /*
-       Remove one glass.
-    */
+    // Update hardware binding hints on cards
+    const bind1 = document.getElementById("bind1");
+    const bind2 = document.getElementById("bind2");
+    const bind3 = document.getElementById("bind3");
+    const bind4 = document.getElementById("bind4");
 
-    person.glasses--;
-
-
-    /*
-       Save immediately.
-    */
-
-    saveData();
-
-
-    /*
-       Update UI.
-    */
-
-    updatePersonUI(person);
-
+    if (bind1) bind1.style.color = (currentPair === 1) ? "#38bdf8" : "#94a3b8";
+    if (bind2) bind2.style.color = (currentPair === 1) ? "#38bdf8" : "#94a3b8";
+    if (bind3) bind3.style.color = (currentPair === 2) ? "#38bdf8" : "#94a3b8";
+    if (bind4) bind4.style.color = (currentPair === 2) ? "#38bdf8" : "#94a3b8";
 }
 
+// =====================================================
+// UPDATE HARDWARE TELEMETRY STATUS
+// =====================================================
 
-/* =====================================================
-   UPDATE GLASS SIZE DISPLAY
-   ===================================================== */
+function updateHardwareTelemetry(hardware) {
+    const espStatus    = document.getElementById("espStatus");
+    const oledStatus   = document.getElementById("oledStatus");
+    const buzzerStatus = document.getElementById("buzzerStatus");
+    const syncIndicator= document.getElementById("syncStatusIndicator");
+    const syncText     = document.getElementById("syncText");
 
-function updateGlassSizeDisplay() {
+    const isConnected = !!(hardware && hardware.esp32);
 
-    document.getElementById(
-        "glassSizeText"
-    ).textContent =
-        CONFIG.GLASS_SIZE_ML + " ml";
+    if (espStatus) {
+        espStatus.textContent = isConnected ? "Connected (Live)" : "Disconnected";
+        espStatus.className = `hw-status ${isConnected ? 'online' : ''}`;
+    }
 
+    if (oledStatus) {
+        oledStatus.textContent = isConnected ? "Ready (0x3C I2C)" : "Offline";
+        oledStatus.className = `hw-status ${isConnected ? 'online' : ''}`;
+    }
+
+    if (buzzerStatus) {
+        buzzerStatus.textContent = isConnected ? "Ready (Pin 13)" : "Offline";
+        buzzerStatus.className = `hw-status ${isConnected ? 'online' : ''}`;
+    }
+
+    if (syncIndicator && syncText) {
+        syncIndicator.classList.remove("sync-error");
+        syncText.textContent = isConnected ? "ESP32 Live" : "Server Ready";
+    }
 }
 
+// =====================================================
+// FETCH LIVE STATE FROM NODE.JS SERVER
+// =====================================================
 
-/* =====================================================
-   INITIALIZE APPLICATION
-   ===================================================== */
+async function fetchServerState() {
+    try {
+        const response = await fetch("/api/state");
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
 
-function initializeApp() {
+        const data = await response.json();
+        if (!data || !data.success) return;
 
-    displayDate();
+        // Update 4 people's water values
+        if (data.state) {
+            peopleData[0].water = data.state.person1 || 0;
+            peopleData[1].water = data.state.person2 || 0;
+            peopleData[2].water = data.state.person3 || 0;
+            peopleData[3].water = data.state.person4 || 0;
 
-    updateGlassSizeDisplay();
+            updatePairUI(data.state.pair);
+        }
 
-    loadData();
+        // Render each card
+        peopleData.forEach(person => updatePersonUI(person));
 
-    renderPeople();
+        // Update Hardware Status
+        updateHardwareTelemetry(data.hardware);
 
+        // Update Date Display
+        updateDateDisplay(data.date);
+
+    } catch (error) {
+        const syncIndicator = document.getElementById("syncStatusIndicator");
+        const syncText      = document.getElementById("syncText");
+
+        if (syncIndicator) syncIndicator.classList.add("sync-error");
+        if (syncText) syncText.textContent = "Server Offline";
+
+        updateHardwareTelemetry({ esp32: false, oled: false, buzzer: false });
+    }
 }
 
+// =====================================================
+// INITIALIZATION
+// =====================================================
 
-/* =====================================================
-   START
-   ===================================================== */
+function init() {
+    updateDateDisplay();
+    peopleData.forEach(person => updatePersonUI(person));
+    updatePairUI(1);
 
-initializeApp();
+    // Initial server fetch
+    fetchServerState();
+
+    // Auto-refresh every 1000ms (1 second) to maintain tight live synchronization
+    setInterval(fetchServerState, 1000);
+}
+
+// Run when DOM is ready
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init);
+} else {
+    init();
+}

@@ -1,145 +1,415 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
-
-    <meta name="viewport"
-          content="width=device-width, initial-scale=1.0">
-
-    <title>Water Tracker</title>
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="4-Person Water Tracker Dashboard synchronized live with ESP32, OLED, and Piezo buzzer.">
+    <title>AquaTrack 4P — Smart Hydration Dashboard</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
 </head>
-
 <body>
+    <div class="background-glow glow-1"></div>
+    <div class="background-glow glow-2"></div>
 
-<header class="header">
+    <!-- MAIN APP CONTAINER -->
+    <div class="app-layout">
+        <!-- HEADER -->
+        <header class="app-header">
+            <div class="header-left">
+                <div class="app-logo">
+                    <span class="water-icon">💧</span>
+                </div>
+                <div>
+                    <h1 class="app-title">AquaTrack <span>4P</span></h1>
+                    <p class="app-subtitle">ESP32 Live Multi-Person Hydration System</p>
+                </div>
+            </div>
 
-    <div class="brand">
-        <div class="logo">💧</div>
+            <div class="header-right">
+                <div class="date-badge" id="currentDateBadge">
+                    <span class="calendar-icon">📅</span>
+                    <span id="currentDate">Loading date...</span>
+                </div>
+                <div class="sync-indicator" id="syncStatusIndicator">
+                    <span class="pulse-dot"></span>
+                    <span id="syncText">Syncing</span>
+                </div>
+                <button class="btn-reset-header" onclick="resetAllData()" title="Reset all 4 people to 0 mL">
+                    🔄 Reset All
+                </button>
+            </div>
+        </header>
 
-        <div>
-            <h1>Water Tracker</h1>
-            <p>Daily Hydration Dashboard</p>
-        </div>
+        <!-- BANNER SECTION: GOAL & ACTIVE HARDWARE PAIR -->
+        <section class="banner-grid">
+            <!-- Daily Goal Card -->
+            <div class="banner-card goal-card">
+                <div class="banner-icon-box blue-accent">
+                    🎯
+                </div>
+                <div class="banner-details">
+                    <span class="banner-label">Daily Hydration Target</span>
+                    <h2 class="banner-value">8 Glasses <span class="unit">/ 2,000 mL (2.0 L)</span></h2>
+                    <p class="banner-caption">Each person tracks independently. 1 glass = 250 mL.</p>
+                </div>
+            </div>
+
+            <!-- Active ESP32 Pair Status -->
+            <div class="banner-card pair-card" id="hardwarePairCard">
+                <div class="banner-icon-box cyan-accent">
+                    🎮
+                </div>
+                <div class="banner-details">
+                    <span class="banner-label">Physical Buttons Control</span>
+                    <h2 class="banner-value" id="activePairDisplay">Pair 1 <span class="unit">(P1 & P2)</span></h2>
+                    <p class="banner-caption" id="activePairHint">Hold both ESP32 buttons 3s to switch to Pair 2</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- PEOPLE GRID -->
+        <main class="people-section">
+            <div class="section-header">
+                <h2>Household Members</h2>
+                <span class="section-tag">4 Independent Trackers</span>
+            </div>
+
+            <div class="people-grid" id="peopleGrid">
+                <!-- PERSON 1 -->
+                <article class="person-card" id="card1">
+                    <div class="person-header">
+                        <div class="person-avatar avatar-1">
+                            <span>P1</span>
+                        </div>
+                        <div class="person-meta">
+                            <h3 class="person-name">Person 1</h3>
+                            <span class="hardware-binding" id="bind1">Controlled by Button A (Pair 1)</span>
+                        </div>
+                        <div class="completion-pill" id="badge1" style="display: none;">
+                            🏆 Goal Reached!
+                        </div>
+                    </div>
+
+                    <!-- Circular Progress & Water Volumes -->
+                    <div class="hydration-overview">
+                        <div class="circle-wrapper">
+                            <div class="progress-circle" id="circle1">
+                                <div class="circle-inner">
+                                    <span class="percent-value" id="percent1">0%</span>
+                                    <span class="percent-label">Hydrated</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="volume-metrics">
+                            <div class="metric-row">
+                                <span class="metric-label">Water Intake</span>
+                                <span class="metric-val main-ml" id="water1">0 mL</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Volume in Litres</span>
+                                <span class="metric-val" id="liters1">0.00 L</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Glass Equivalents</span>
+                                <span class="metric-val glass-equiv" id="glasses1">0.0 / 8 glasses</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div class="bar-container">
+                        <div class="bar-track">
+                            <div class="bar-fill" id="bar1"></div>
+                        </div>
+                        <div class="bar-caption">
+                            <span id="status1">2000 mL remaining</span>
+                            <span class="target-flag">Goal: 2.0L</span>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="card-actions">
+                        <button class="btn-action btn-add" id="addBtn1" onclick="drinkWater(1)">
+                            <span class="btn-icon">💧</span> +250 mL
+                        </button>
+                        <button class="btn-action btn-undo" id="undoBtn1" onclick="undoWater(1)">
+                            <span class="btn-icon">↩</span> Undo
+                        </button>
+                    </div>
+                </article>
+
+                <!-- PERSON 2 -->
+                <article class="person-card" id="card2">
+                    <div class="person-header">
+                        <div class="person-avatar avatar-2">
+                            <span>P2</span>
+                        </div>
+                        <div class="person-meta">
+                            <h3 class="person-name">Person 2</h3>
+                            <span class="hardware-binding" id="bind2">Controlled by Button B (Pair 1)</span>
+                        </div>
+                        <div class="completion-pill" id="badge2" style="display: none;">
+                            🏆 Goal Reached!
+                        </div>
+                    </div>
+
+                    <!-- Circular Progress & Water Volumes -->
+                    <div class="hydration-overview">
+                        <div class="circle-wrapper">
+                            <div class="progress-circle" id="circle2">
+                                <div class="circle-inner">
+                                    <span class="percent-value" id="percent2">0%</span>
+                                    <span class="percent-label">Hydrated</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="volume-metrics">
+                            <div class="metric-row">
+                                <span class="metric-label">Water Intake</span>
+                                <span class="metric-val main-ml" id="water2">0 mL</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Volume in Litres</span>
+                                <span class="metric-val" id="liters2">0.00 L</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Glass Equivalents</span>
+                                <span class="metric-val glass-equiv" id="glasses2">0.0 / 8 glasses</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div class="bar-container">
+                        <div class="bar-track">
+                            <div class="bar-fill" id="bar2"></div>
+                        </div>
+                        <div class="bar-caption">
+                            <span id="status2">2000 mL remaining</span>
+                            <span class="target-flag">Goal: 2.0L</span>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="card-actions">
+                        <button class="btn-action btn-add" id="addBtn2" onclick="drinkWater(2)">
+                            <span class="btn-icon">💧</span> +250 mL
+                        </button>
+                        <button class="btn-action btn-undo" id="undoBtn2" onclick="undoWater(2)">
+                            <span class="btn-icon">↩</span> Undo
+                        </button>
+                    </div>
+                </article>
+
+                <!-- PERSON 3 -->
+                <article class="person-card" id="card3">
+                    <div class="person-header">
+                        <div class="person-avatar avatar-3">
+                            <span>P3</span>
+                        </div>
+                        <div class="person-meta">
+                            <h3 class="person-name">Person 3</h3>
+                            <span class="hardware-binding" id="bind3">Controlled by Button A (Pair 2)</span>
+                        </div>
+                        <div class="completion-pill" id="badge3" style="display: none;">
+                            🏆 Goal Reached!
+                        </div>
+                    </div>
+
+                    <!-- Circular Progress & Water Volumes -->
+                    <div class="hydration-overview">
+                        <div class="circle-wrapper">
+                            <div class="progress-circle" id="circle3">
+                                <div class="circle-inner">
+                                    <span class="percent-value" id="percent3">0%</span>
+                                    <span class="percent-label">Hydrated</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="volume-metrics">
+                            <div class="metric-row">
+                                <span class="metric-label">Water Intake</span>
+                                <span class="metric-val main-ml" id="water3">0 mL</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Volume in Litres</span>
+                                <span class="metric-val" id="liters3">0.00 L</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Glass Equivalents</span>
+                                <span class="metric-val glass-equiv" id="glasses3">0.0 / 8 glasses</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div class="bar-container">
+                        <div class="bar-track">
+                            <div class="bar-fill" id="bar3"></div>
+                        </div>
+                        <div class="bar-caption">
+                            <span id="status3">2000 mL remaining</span>
+                            <span class="target-flag">Goal: 2.0L</span>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="card-actions">
+                        <button class="btn-action btn-add" id="addBtn3" onclick="drinkWater(3)">
+                            <span class="btn-icon">💧</span> +250 mL
+                        </button>
+                        <button class="btn-action btn-undo" id="undoBtn3" onclick="undoWater(3)">
+                            <span class="btn-icon">↩</span> Undo
+                        </button>
+                    </div>
+                </article>
+
+                <!-- PERSON 4 -->
+                <article class="person-card" id="card4">
+                    <div class="person-header">
+                        <div class="person-avatar avatar-4">
+                            <span>P4</span>
+                        </div>
+                        <div class="person-meta">
+                            <h3 class="person-name">Person 4</h3>
+                            <span class="hardware-binding" id="bind4">Controlled by Button B (Pair 2)</span>
+                        </div>
+                        <div class="completion-pill" id="badge4" style="display: none;">
+                            🏆 Goal Reached!
+                        </div>
+                    </div>
+
+                    <!-- Circular Progress & Water Volumes -->
+                    <div class="hydration-overview">
+                        <div class="circle-wrapper">
+                            <div class="progress-circle" id="circle4">
+                                <div class="circle-inner">
+                                    <span class="percent-value" id="percent4">0%</span>
+                                    <span class="percent-label">Hydrated</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="volume-metrics">
+                            <div class="metric-row">
+                                <span class="metric-label">Water Intake</span>
+                                <span class="metric-val main-ml" id="water4">0 mL</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Volume in Litres</span>
+                                <span class="metric-val" id="liters4">0.00 L</span>
+                            </div>
+                            <div class="metric-row">
+                                <span class="metric-label">Glass Equivalents</span>
+                                <span class="metric-val glass-equiv" id="glasses4">0.0 / 8 glasses</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Progress Bar -->
+                    <div class="bar-container">
+                        <div class="bar-track">
+                            <div class="bar-fill" id="bar4"></div>
+                        </div>
+                        <div class="bar-caption">
+                            <span id="status4">2000 mL remaining</span>
+                            <span class="target-flag">Goal: 2.0L</span>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="card-actions">
+                        <button class="btn-action btn-add" id="addBtn4" onclick="drinkWater(4)">
+                            <span class="btn-icon">💧</span> +250 mL
+                        </button>
+                        <button class="btn-action btn-undo" id="undoBtn4" onclick="undoWater(4)">
+                            <span class="btn-icon">↩</span> Undo
+                        </button>
+                    </div>
+                </article>
+            </div>
+        </main>
+
+        <!-- HARDWARE STATUS SECTION -->
+        <section class="hardware-section">
+            <div class="section-header">
+                <h2>Hardware Telemetry</h2>
+                <span class="section-tag">Wi-Fi Bridge</span>
+            </div>
+
+            <div class="hardware-grid">
+                <div class="hardware-card" id="espCard">
+                    <div class="hw-icon">📶</div>
+                    <div class="hw-info">
+                        <h4>ESP32 Microcontroller</h4>
+                        <p class="hw-status" id="espStatus">Checking connection...</p>
+                        <span class="hw-subtext" id="espIpSubtext">192.168.101.97:3000</span>
+                    </div>
+                </div>
+
+                <div class="hardware-card" id="oledCard">
+                    <div class="hw-icon">📺</div>
+                    <div class="hw-info">
+                        <h4>128x64 OLED Display</h4>
+                        <p class="hw-status" id="oledStatus">Offline</p>
+                        <span class="hw-subtext">I2C (0x3C) Live Screen</span>
+                    </div>
+                </div>
+
+                <div class="hardware-card" id="buzzerCard">
+                    <div class="hw-icon">🔔</div>
+                    <div class="hw-info">
+                        <h4>Audio Buzzer</h4>
+                        <p class="hw-status" id="buzzerStatus">Offline</p>
+                        <span class="hw-subtext">Pin 13 Acoustic Feedback</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- HARDWARE TIMING QUICK CHEATSHEET -->
+        <section class="cheatsheet-section">
+            <div class="cheatsheet-card">
+                <h3>Hardware Button Timing Reference</h3>
+                <div class="rules-grid">
+                    <div class="rule-item">
+                        <span class="rule-time">0 to &lt; 2.0s</span>
+                        <span class="rule-action add-action">+250 mL (1 Glass)</span>
+                        <span class="rule-note">Single press release</span>
+                    </div>
+                    <div class="rule-item">
+                        <span class="rule-time">2.0s to &lt; 4.0s</span>
+                        <span class="rule-action add-action">+200 mL</span>
+                        <span class="rule-note">Medium hold release</span>
+                    </div>
+                    <div class="rule-item">
+                        <span class="rule-time">&ge; 4.0s</span>
+                        <span class="rule-action undo-action">UNDO Previous Addition</span>
+                        <span class="rule-note">Long hold release</span>
+                    </div>
+                    <div class="rule-item">
+                        <span class="rule-time">Both &ge; 3.0s</span>
+                        <span class="rule-action switch-action">SWITCH PAIR (P1/2 &harr; P3/4)</span>
+                        <span class="rule-note">Simultaneous hold</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- FOOTER -->
+        <footer class="app-footer">
+            <p>Water Tracker &copy; 2026 &bull; Automatic Daily Midnight Reset (Asia/Kolkata) &bull; Synchronized via Node.js Express</p>
+        </footer>
     </div>
 
-    <div class="date-box">
-        <span id="currentDate"></span>
-    </div>
-
-</header>
-
-
-<main class="container">
-
-    <!-- Goal -->
-    <section class="goal-card">
-
-        <div>
-            <h2>Daily Hydration Goal</h2>
-
-            <p>
-                Each person has an individual goal of
-                <strong>8 glasses</strong> per day.
-            </p>
-
-            <p class="small-text">
-                Glass size: <strong id="glassSizeText">250 ml</strong>
-            </p>
-        </div>
-
-        <div class="goal-badge">
-            <span>💧</span>
-            <strong>8</strong>
-            <small>Glasses / Day</small>
-        </div>
-
-    </section>
-
-
-    <!-- People -->
-    <section class="people-grid" id="peopleGrid">
-
-        <!-- Cards are created automatically by JavaScript -->
-
-    </section>
-
-
-    <!-- Hardware -->
-    <section class="hardware-card">
-
-        <div class="section-title">
-
-            <h2>Hardware Status</h2>
-
-            <span class="prototype-label">
-                Prototype
-            </span>
-
-        </div>
-
-
-        <div class="hardware-grid">
-
-            <div class="hardware-item">
-
-                <span class="status-dot"></span>
-
-                <div>
-                    <strong>ESP32</strong>
-                    <p id="esp32Status">Ready for connection</p>
-                </div>
-
-            </div>
-
-
-            <div class="hardware-item">
-
-                <span class="status-dot"></span>
-
-                <div>
-                    <strong>OLED</strong>
-                    <p>Ready</p>
-                </div>
-
-            </div>
-
-
-            <div class="hardware-item">
-
-                <span class="status-dot"></span>
-
-                <div>
-                    <strong>Buzzer</strong>
-                    <p>Ready</p>
-                </div>
-
-            </div>
-
-        </div>
-
-    </section>
-
-
-    <footer>
-
-        <p>
-            💧 Smart Water Tracker
-        </p>
-
-        <p>
-            Daily goal resets automatically each new day.
-        </p>
-
-    </footer>
-
-</main>
-
-
-<script src="js/script.js"></script>
-
+    <!-- Client Script -->
+    <script src="js/script.js"></script>
 </body>
-
 </html>
