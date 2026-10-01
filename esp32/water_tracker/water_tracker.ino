@@ -21,7 +21,8 @@
 // NETWORK & SERVER SETTINGS
 // =====================================================
 
-const char *WIFI_SSID = "S23";
+const char *WIFI_SSID = " S23 ";        // Notice leading & trailing space detected from hotspot
+const char *WIFI_SSID_ALT = "S23";       // Alternative without spaces
 const char *WIFI_PASSWORD = "admin000";
 
 // Laptop IP and Server Port (3000)
@@ -256,22 +257,43 @@ void checkNewDay() {
 void connectWiFi() {
   WiFi.mode(WIFI_STA);
   WiFi.setAutoReconnect(true);
+
+  // Try primary SSID (with spaces)
+  Serial.print("Connecting to WiFi (");
+  Serial.print(WIFI_SSID);
+  Serial.print(")");
   WiFi.begin(WIFI_SSID, WIFI_PASSWORD);
 
-  Serial.print("Connecting to WiFi");
   int attempts = 0;
-  while (WiFi.status() != WL_CONNECTED && attempts < 25) {
+  while (WiFi.status() != WL_CONNECTED && attempts < 15) {
     delay(400);
     Serial.print(".");
     attempts++;
   }
   Serial.println();
 
+  // If failed, try alternative SSID (without spaces)
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.print("Trying alternative SSID (");
+    Serial.print(WIFI_SSID_ALT);
+    Serial.print(")");
+    WiFi.disconnect();
+    delay(200);
+    WiFi.begin(WIFI_SSID_ALT, WIFI_PASSWORD);
+    attempts = 0;
+    while (WiFi.status() != WL_CONNECTED && attempts < 15) {
+      delay(400);
+      Serial.print(".");
+      attempts++;
+    }
+    Serial.println();
+  }
+
   if (WiFi.status() == WL_CONNECTED) {
-    Serial.print("WiFi Connected. ESP32 IP: ");
+    Serial.print("WiFi Connected! ESP32 IP: ");
     Serial.println(WiFi.localIP());
   } else {
-    Serial.println("WiFi connection pending (will auto-reconnect).");
+    Serial.println("WiFi connection failed. Check 2.4 GHz Band on Hotspot!");
   }
 }
 

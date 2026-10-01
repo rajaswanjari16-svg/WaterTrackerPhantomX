@@ -19,16 +19,40 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Enable JSON parsing
-app.use(express.json());
+// Enable body parsing for JSON, URL-encoded, and plain text (handles ESP32 microcontrollers gracefully)
+app.use(express.json({ strict: false }));
+app.use(express.urlencoded({ extended: true }));
+app.use(express.text({ type: ['text/*', 'application/text'] }));
 
-// Enable CORS for all routes (so local testing and remote calls both work smoothly)
+// Parse raw string body if JSON header wasn't matched properly
+app.use((req, res, next) => {
+    if (typeof req.body === 'string' && req.body.trim().startsWith('{')) {
+        try {
+            req.body = JSON.parse(req.body);
+        } catch (e) {
+            // keep as string
+        }
+    }
+    next();
+});
+
+// Enable CORS for all routes (so local testing, ESP32, and remote calls all work smoothly)
 app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
     res.header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
     if (req.method === 'OPTIONS') {
         return res.sendStatus(200);
+    }
+    next();
+});
+
+// Detailed request logger to easily diagnose ESP32 connections
+app.use((req, res, next) => {
+    // Only log API routes and errors to keep terminal clean
+    if (req.url.startsWith('/api')) {
+        const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.ip;
+        console.log(`[HTTP ${req.method}] ${req.url} from ${clientIp}`);
     }
     next();
 });
@@ -154,7 +178,12 @@ app.get('/api/state', (req, res) => {
 app.post('/api/state', (req, res) => {
     checkDailyReset();
 
-    const body = req.body || {};
+    const clientIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress || req.ip;
+    let body = req.body || {};
+    if (typeof body === 'string') {
+        try { body = JSON.parse(body); } catch(e) {}
+    }
+
     if (typeof body.person1 === 'number') waterState.person1 = Math.max(0, body.person1);
     if (typeof body.person2 === 'number') waterState.person2 = Math.max(0, body.person2);
     if (typeof body.person3 === 'number') waterState.person3 = Math.max(0, body.person3);
@@ -162,10 +191,21 @@ app.post('/api/state', (req, res) => {
     if (typeof body.pair === 'number') waterState.pair = body.pair;
 
     lastEspHeartbeat = Date.now();
+    console.log(`[ESP32 CONNECTED] State updated from ${clientIp}: P1=${waterState.person1}mL, P2=${waterState.person2}mL, P3=${waterState.person3}mL, P4=${waterState.person4}mL (Pair ${waterState.pair})`);
 
     res.json({
         success: true,
         message: "State updated successfully"
+    });
+});
+
+// 2b. GET /api/ping - Quick test endpoint for ESP32 and browser
+app.get('/api/ping', (req, res) => {
+    res.json({
+        success: true,
+        status: "online",
+        serverTime: new Date().toISOString(),
+        espOnline: (Date.now() - lastEspHeartbeat) < ESP_TIMEOUT_MS
     });
 });
 
