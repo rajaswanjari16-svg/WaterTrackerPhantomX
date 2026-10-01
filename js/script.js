@@ -543,7 +543,7 @@ function updatePersonUI(person) {
     ) {
 
         status.textContent =
-            "🎉 Daily goal completed,Congratulations!!!!";
+            "🎉 Daily goal completed,Congratulations!-!!";
 
 
         status.classList.add(
